@@ -1,13 +1,11 @@
 title: "我的知识库"
 description: "个人 Markdown 文档集合"
-baseurl: "" # 如果仓库名是 用户名.github.io 则留空
-url: "https://你的用户名.github.io" # 替换为你的用户名
+baseurl: ""
+url: "https://LiMuwenan.github.io"
 
 # 构建设置
 markdown: kramdown
 permalink: pretty
-
-# 主题（使用 GitHub Pages 支持的默认主题）
 theme: minima
 
 # 插件
@@ -15,10 +13,12 @@ plugins:
   - jekyll-feed
   - jekyll-seo-tag
 
-# 其他设置
-author:
-  name: "你的名字"
-  email: "你的邮箱"
-
-social_links:
-  github: 你的github用户名
+# 排除文件
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - node_modules
+  - vendor/bundle/
+  - vendor/cache/
+  - vendor/gems/
+  - vendor/ruby/
