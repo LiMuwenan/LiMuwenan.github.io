@@ -8,10 +8,10 @@ markdown: kramdown
 permalink: pretty
 theme: minima
 
-# 在 _config.yml 中添加
-# header_pages:
-#   - categories.md
-#   - archive.md
+在 _config.yml 中添加
+header_pages:
+  - categories.md
+  - archive.md
 
 # 或者添加自定义导航
 navigation:
