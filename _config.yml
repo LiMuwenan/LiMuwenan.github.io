@@ -9,18 +9,18 @@ permalink: pretty
 theme: minima
 
 # 在 _config.yml 中添加
-header_pages:
-  - categories.md
-  - archive.md
+# header_pages:
+#   - categories.md
+#   - archive.md
 
 # 或者添加自定义导航
-# navigation:
-#   - title: 首页
-#     url: /
-#   - title: 分类目录
-#     url: /categories/
-#   - title: 时间归档
-#     url: /archive/
+navigation:
+  - title: 首页
+    url: /
+  - title: 分类目录
+    url: /categories/
+  - title: 时间归档
+    url: /archive/
 
 # 插件
 plugins:
