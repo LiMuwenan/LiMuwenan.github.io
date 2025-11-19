@@ -1,8 +1,8 @@
 ---
 layout: post
-title: "我的第一篇文章"
+title: "web development"
 date: 2024-01-01
-categories: [随笔]
+categories: [学习笔记]
 ---
 
 # 这是我的第一篇文章
