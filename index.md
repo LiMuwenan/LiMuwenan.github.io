@@ -4,27 +4,6 @@ title: 欢迎来到我的知识库
 description: 这里是我用 Markdown 记录的所有内容
 ---
 
-## 最新文章
-
-{% for post in site.posts limit:5 %}
-<div class="recent-post">
-  <h3><a href="{{ post.url }}">{{ post.title }}</a></h3>
-  <div class="post-info">
-    <span class="date">{{ post.date | date: "%Y年%m月%d日" }}</span>
-    {% if post.categories %}
-    <span class="categories">
-      {% for category in post.categories %}
-      <span class="category-tag">{{ category }}</span>
-      {% endfor %}
-    </span>
-    {% endif %}
-  </div>
-  {% if post.description %}
-  <p class="post-description">{{ post.description }}</p>
-  {% endif %}
-</div>
-{% endfor %}
-
 ## 快速导航
 
 <div class="nav-cards">

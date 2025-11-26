@@ -13,15 +13,6 @@ header_pages:
   - categories.md
   - archive.md
 
-# 或者添加自定义导航
-navigation:
-  - title: 首页
-    url: /
-  - title: 分类目录
-    url: /categories/
-  - title: 时间归档
-    url: /archive/
-
 # 插件
 plugins:
   - jekyll-feed
