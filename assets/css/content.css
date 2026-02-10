@@ -1,0 +1,145 @@
+* {
+    box-sizing: border-box;
+}
+
+
+.content {
+    background-color: white;
+    padding: 50px 100px;
+    border-radius: 10px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+    transform: translateY(-70px);
+    transition: transform 0.5s ease;
+}
+
+.content html,
+body {
+    height: 100%;
+    background: #e6e6e6;
+}
+
+.content h1 {
+    color: #084298;
+    margin-bottom: 10px;
+}
+
+.content h2 {
+    color: #0a58ca;
+    margin-bottom: 10px;
+}
+
+.content h3 {
+    color: #0d6efd;
+    margin-bottom: 10px;
+}
+
+.content h4 {
+    color: #3d8bfd;
+    margin-bottom: 10px;
+}
+
+.content h5 {
+    color: #3d8bfd;
+    margin-bottom: 10px;
+}
+
+.content p {
+    font-family: Verdana, Geneva, Tahoma, sans-serif;
+    line-height: 1.5;
+}
+
+.content li {
+    line-height: 2;
+}
+
+.content blockquote {
+    margin: 20px;
+    padding: 16px 20px;
+    background: linear-gradient(135deg, #f8f9fa 0%, #eef2f7 100%);
+    border-left: 5px solid #0d6efd;
+    border-radius: 8px;
+    color: #212529;
+    position: relative;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.content blockquote::before {
+    content: '';
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    font-size: 28px;
+    font-family: Georgia, serif;
+    color: #0d6efd;
+    opacity: 0.4;
+    line-height: 1;
+}
+
+.content blockquote p {
+    margin: 0 0 6px 0;
+    font-size: 15px;
+    color: #2c2f33;
+}
+
+.content blockquote p:last-child {
+    margin-bottom: 0;
+}
+
+.content pre {
+    margin: 0;
+    max-width: 100%;
+    /* 防止代码块溢出 */
+}
+
+.content pre code {
+    display: block;
+    border-radius: 8px;
+    padding: 15px;
+    background: #212529;
+    color: #f8f9fa;
+    /* 提高代码可读性 */
+    width: 100%;
+    max-width: 100%;
+    /* 防止代码溢出 */
+    overflow-x: auto;
+    /* 代码过长时允许水平滚动 */
+    white-space: pre;
+    /* 保持原始格式 */
+    line-height: 1.5;
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    box-sizing: border-box;
+}
+
+.content code:not(pre code) {
+    /* 行内代码样式 */
+    padding: 2px 6px;
+    background: #e9ecef;
+    color: #e83e8c;
+    border-radius: 3px;
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-size: 0.9em;
+}
+
+.content hr {
+    border: 0;
+    height: 1px;
+    background: #dee2e6;
+    margin: 20px 0;
+    width: 100%;
+}
+
+.content img {
+    max-width: 100%;
+    /* 确保图片不超出容器 */
+    height: auto;
+    display: block;
+    margin: 20px auto;
+    border-radius: 5px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    transition: transform 0.3s ease;
+    /* 缩短过渡时间 */
+}
+
+.content img:hover {
+    transform: scale(1.02);
+}
