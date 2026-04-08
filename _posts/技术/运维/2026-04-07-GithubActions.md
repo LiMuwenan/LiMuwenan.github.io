@@ -96,17 +96,19 @@ steps:
 
 ## 1.2 Java项目
 以下流水线定义了
-> 1.名称 Java CI with Maven and Docker
-> 2.dev分支推送、master-jdk17分支的pull_request请求合并
-> 3.定义环境变量，Docker镜像名称，项目名称
-> 4.定义jobs，名称为build
-> 5.基于ubuntu最新稳定版进行构建
-> 6.定义了版本矩阵，当前使用java 17进行代码构建
-> 7.1 actions/checkout@v4检出代码
-> 7.2 actions/setup-java@v4 使用java action，指定版本
-> 7.3 执行打包命令
-> 7.4 提取版本号并设置为环境变量
-> 7.5 后续上传文件、推送docker镜像
+> 1.名称 Java CI with Maven and Docker \
+> 2.dev分支推送、master-jdk17分支的pull_request请求合并 \
+> 3.定义环境变量，Docker镜像名称，项目名称 \
+> 4.定义jobs，名称为build \
+> 5.基于ubuntu最新稳定版进行构建 \
+> 6.定义了版本矩阵，当前使用java 17进行代码构建 \
+> 7.1 actions/checkout@v4检出代码 \
+> 7.2 actions/setup-java@v4 使用java action，指定版本 \
+> 7.3 执行打包命令 \
+> 7.4 提取版本号并设 置为环境变量\
+> 7.5 后续上传文件、推送docker镜像 \
+
+流水线文本
 ```yml
 name: Java CI with Maven and Docker
 
@@ -192,8 +194,10 @@ jobs:
 ```
 
 ## 1.3 Vue项目
-> 1.前面的不再介绍
-> 2.actions/upload-artifact@v4 将文件打包上传，文件地址为dist-prod，打包完成的文件名为dist-prod.zip
+> 1.前面的不再介绍 \
+> 2.actions/upload-artifact@v4 将文件打包上传，文件地址为dist-prod，打包完成的文件名为dist-prod.zip \
+
+流水线文本
 ```yml
 name: Build Vue Project
 
