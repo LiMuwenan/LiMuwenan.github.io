@@ -1,0 +1,221 @@
+---
+layout: default2
+title: "国产数据库适配 - 人大金仓数据库查询慢"
+date: 2026-09-07
+categories: ['数据库']
+author: LiGen
+---
+
+# 1 背景
+
+应国产化要求，在生产环境中使用人大金仓数据库。
+
+# 2 现象
+
+有一张物料表，总计大约18万条数据，一张大宽表，大约60个字段（别问...）
+
+物料信息页面不输入任何查询条件，查询一次需要3秒
+
+
+后端查询如下
+```xml
+SELECT * FROM t_goods
+<where>
+    <if test="query.goodsName != null and query.goodsName !=''">
+        AND INSTR(goods_name,#{query.goodsName})
+    </if>
+    <if test="query.goodsCode != null and query.goodsCode !=''">
+        AND INSTR(goods_code,#{query.goodsCode})
+    </if>
+    <if test="query.categoryId != null">
+        AND category_id = #{query.categoryId}
+    </if>
+    AND delete_flag = 0
+</where>
+  ORDER BY goods_id DESC
+```
+
+
+18万数据查询慢到3秒，属实有点离奇
+
+# 3 解决路径
+
+## 3.1 分析执行计划
+
+第一步肯定是分析执行计划啦
+```sql
+explain select * from t_goods;
+```
+结果如下
+```
+Seq Scan on t_goods  (cost=0.00..6397.58 rows=176858 width=12780)
+```
+看看进行了全表扫描，这是肯定啦，没带任何条件
+1. cost 0.00：启动代价，从开始执行到返回第一行的成本
+2. cost 6397.58：总代价，完成整个查询的成本
+
+这个成本是综合计算，不代表具体时间，成本越高代表越耗时
+
+> 数据库优化器通过一组成本常量来估算每个操作的代价，常用的包括：\
+> seq_page_cost：顺序扫描一个数据页的基准代价（默认 1.0） \
+> random_page_cost：随机访问一个数据页的代价（默认 4.0，对于 SSD 可调低） \
+> cpu_tuple_cost：处理一行数据的 CPU 代价（默认 0.01）\
+> cpu_index_tuple_cost：处理一个索引项的 CPU 代价（默认 0.005） \
+> cpu_operator_cost：执行一个操作符（如比较、加法）的代价（默认 0.0025） \
+> 优化器会依据这些常量、表/索引的统计信息（行数、数据分布、页数等）以及查询的具体操作，计算出一个总代价值，用于比较不同执行计划的优劣。
+
+3. rows：176858：预估总行数
+4. witdth：12780：预估单行平均宽度
+
+从这里看能做的是降低平均宽度，不查无用的列
+
+```sql
+explain select goods_id, goods_code, goods_name, category_id from t_goods
+```
+结果如下
+```
+Seq Scan on t_goods  (cost=0.00..6397.58 rows=176858 width=59)
+```
+行宽减少，其他数据没变，说明没有什么效果
+
+
+从执行计划上看现在没什么可优化地方
+
+## 3.2 转机
+
+同样的数据我迁移到mysql上，查询没有任何问题，响应很快
+
+从这里发现是数据库的问题，疯狂吐槽国产库...初步发现是全表扫描效率的问题，mysql全表扫描比kingbase扫描快的多
+
+现在测试 `EXPLAIN (ANALYZE, BUFFERS) SELECT count(1) FROM t_goods;`
+
+```
+Finalize Aggregate  (cost=6550.35..6550.36 rows=1 width=8) (actual time=1576.552..1612.753 rows=1 loops=1)
+  Buffers: shared hit=4629
+  ->  Gather  (cost=6550.14..6550.35 rows=2 width=8) (actual time=25.919..1612.733 rows=3 loops=1)
+        Workers Planned: 2
+        Workers Launched: 2
+        Buffers: shared hit=4629
+        ->  Partial Aggregate  (cost=5550.14..5550.15 rows=1 width=8) (actual time=6.879..6.880 rows=1 loops=3)
+              Buffers: shared hit=4629
+              ->  Parallel Seq Scan on t_goods  (cost=0.00..5365.91 rows=73691 width=0) (actual time=0.008..5.194 rows=58953 loops=3)
+                    Buffers: shared hit=4629
+Planning Time: 0.992 ms
+Execution Time: 1612.864 ms
+```
+
+1. `Parallel Seq Scan on t_goods`：并行全表扫描
+   1. `actual time`: 5.194毫秒，扫描很快
+   2. `shared hit`: 4629，没有`shared read`，所以全部在缓冲区中（整个表56MB，缓冲区512MB，这个后面说）
+2. `Partial Aggregate`：每个worker对自己的结果进行局部计数
+   1. `actual time`: 6.88毫秒，也很快
+3. `Gather`：聚合并行结果
+   1. 两个worker，一个gather，总共3个线程
+   2. `actual time`: **1612.733毫秒，这里时间直接爆炸，增加了1.几秒的耗时**
+4. `Final Aggregate`: 最终汇总
+
+所以问题已经发现，kingbase并行执行的汇总操作消耗了大量的时间
+
+### 为什么
+
+为什么执行时间长达 1.6 秒？
+数据扫描本身只需约 5 毫秒（每个 worker），局部聚合约 7 毫秒，但 Gather 节点却耗时 1.6 秒。
+
+这说明时间主要消耗在并行查询的启动和协调开销，而非真正的数据读取或计算。
+
+具体开销包括：
+
+创建 2 个 worker 进程（Windows 环境下进程创建开销更大）；
+
+分配共享内存、同步任务；
+
+进程间通信（IPC）等待；
+
+leader 进程等待所有 worker 启动并完成任务。
+
+对于仅 18 万行的小表，并行执行是典型的“负优化”：并行带来的微小扫描加速（可能节省几毫秒）远不足以弥补启动和协调的开销。
+
+**最直接的方法就是关闭并行**
+
+### 关闭并行
+
+临时关闭
+
+```sql
+SET max_parallel_workers_per_gather = 0;
+```
+
+修改配置文件`kingbase.conf`
+
+```
+max_parallel_workers_per_gather = 0	# taken from max_parallel_workers
+```
+
+测试`SELECT count(1)`
+
+```
+Aggregate  (cost=6839.73..6839.74 rows=1 width=8) (actual time=17.284..17.285 rows=1 loops=1)
+  Buffers: shared hit=4629
+  ->  Seq Scan on t_goods  (cost=0.00..6397.58 rows=176858 width=0) (actual time=0.015..12.952 rows=176858 loops=1)
+        Buffers: shared hit=4629
+Planning Time: 0.354 ms
+Execution Time: 17.339 ms
+```
+
+从执行计划看没有问题，实际执行也已经无感
+
+再测试`SELECT *`
+
+```
+Seq Scan on t_goods  (cost=0.00..6397.58 rows=176858 width=12780) (actual time=0.023..17.523 rows=176858 loops=1)
+  Buffers: shared hit=4629
+Planning Time: 0.905 ms
+Execution Time: 22.426 ms
+
+```
+
+
+## 3.4 为什么没有建索引
+
+数据库万年不变的老话题，优化查询先建索引
+
+而且物料表一般只会新增数据，不编辑数据，所以对关键查询字段建索引很有必要
+
+但是话又说回来
+1. 我这个查询中两个是模糊查询（可以使用ginsuoyin） 
+2. category_id 不常选，且大量99%数据是同一个分类 
+3. delete_flag 固定，且大量99%数据是未删除的 
+4. 未带任何条件查询都很慢，说明大概率不是索引的问题
+
+所以建立复合索引的意义不大
+
+
+# 总结
+
+1. 关闭并行解决问题
+2. 如果数据量大可以开启并行，但是并行触发条件需要重新设置
+```
+#min_parallel_table_scan_size = 8MB # 只有大于这个值才开启并行
+```
+我们`t_goods`表的大小`54MB`，到达触发条件，说明配置的默认值太小了，影响发挥
+```
+SELECT
+    pg_size_pretty(pg_total_relation_size('t_goods')) AS total_size,
+    pg_size_pretty(pg_relation_size('t_goods')) AS table_size,
+    n_dead_tup,
+    n_live_tup,
+    last_vacuum,
+    last_autovacuum,
+    last_analyze
+FROM pg_stat_user_tables
+WHERE relname = 't_goods';
+```
+根据实际情况可以调整下面的值
+```
+min_parallel_table_scan_size = 100MB   # 只有大于该值的表才考虑并行
+parallel_setup_cost = 10000           # 提高并行启动成本
+parallel_tuple_cost = 1               # 提高每行并行处理成本
+shared_buffers = 512MB                 # 缓存大小 建议设置为物理内存的 25%~40%，确保常用数据缓存于内存
+effective_cache_size = 2GB              # 设置为物理内存的 50%~75%，帮助优化器判断缓存命中率。
+random_page_cost = 1.5                     # 如果使用 SSD 磁盘，可适当降低（如 1.5~2.0）。
+```
